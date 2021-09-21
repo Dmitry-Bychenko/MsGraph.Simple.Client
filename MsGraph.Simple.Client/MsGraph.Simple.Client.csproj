@@ -12,11 +12,20 @@
     <RepositoryUrl>https://github.com/Dmitry-Bychenko/MsGraph.Simple.Client</RepositoryUrl>
     <RepositoryType>https://github.com/Dmitry-Bychenko/MsGraph.Simple.Client</RepositoryType>
     <PackageReleaseNotes>Initial Implementation</PackageReleaseNotes>
+    <PackageIcon>MsGraph.png</PackageIcon>
+    <PackageIconUrl />
   </PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Identity.Client" Version="4.35.1" />
 		<PackageReference Include="Microsoft.Graph" Version="4.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="..\..\Images\MsGraph.png">
+	    <Pack>True</Pack>
+	    <PackagePath></PackagePath>
+	  </None>
 	</ItemGroup>
 
 </Project>
