@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MsGraph.Simple.Client.Graph {
+namespace MsGraph.Simple.Client.Json {
 
   public static class UserImage {
     #region Public

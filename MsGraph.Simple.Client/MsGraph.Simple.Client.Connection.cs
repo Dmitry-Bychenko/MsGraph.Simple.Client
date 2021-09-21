@@ -103,13 +103,15 @@ namespace MsGraph.Simple.Client {
     }
 
     // Access Token
-    private async Task<string> GetAccessToken() {
+    private async Task<string> GetAccessToken(CancellationToken token = default) {
+      token.ThrowIfCancellationRequested();
+
       AuthenticationResult result = null;
 
       if (UserAccount is not null) {
         result = await Application
           .AcquireTokenSilent(Permissions, UserAccount)
-          .ExecuteAsync()
+          .ExecuteAsync(token)
           .ConfigureAwait(false);
 
         return result.AccessToken;
@@ -125,7 +127,7 @@ namespace MsGraph.Simple.Client {
 
           result = await Application
             .AcquireTokenByUsernamePassword(Permissions, Login, pwd)
-            .ExecuteAsync()
+            .ExecuteAsync(token)
             .ConfigureAwait(false);
 
           UserAccount = result.Account;
@@ -154,7 +156,7 @@ namespace MsGraph.Simple.Client {
 
                  return Task.FromResult(0);
                })
-            .ExecuteAsync()
+            .ExecuteAsync(token)
             .ConfigureAwait(false);
 
           UserAccount = result.Account;
@@ -176,7 +178,7 @@ namespace MsGraph.Simple.Client {
           .WithAccount(null)
           .WithPrompt(Microsoft.Identity.Client.Prompt.SelectAccount)
           .WithSystemWebViewOptions(options)
-          .ExecuteAsync()
+          .ExecuteAsync(token)
           .ConfigureAwait(false);
 
         UserAccount = result.Account;
@@ -266,10 +268,12 @@ namespace MsGraph.Simple.Client {
         return m_ConnectionString;
       }
       set {
-        m_ConnectionString = value ?? throw new ArgumentNullException(nameof(value));
+        value = value ?? throw new ArgumentNullException(nameof(value));
 
         if (string.Equals(value, m_ConnectionString))
           return;
+
+        m_ConnectionString = value;
 
         DbConnectionStringBuilder builder = new() {
           ConnectionString = value
@@ -337,6 +341,15 @@ namespace MsGraph.Simple.Client {
     public bool Connected => UserAccount is not null;
 
     /// <summary>
+    /// Connect Async
+    /// </summary>
+    public async Task<bool> ConnectAsync(CancellationToken token = default) {
+      string bearer = await GetAccessToken(token).ConfigureAwait(false);
+
+      return !string.IsNullOrEmpty(bearer);
+    }
+
+    /// <summary>
     /// Access Token
     /// </summary>
     public Task<string> AccessToken {
@@ -346,10 +359,10 @@ namespace MsGraph.Simple.Client {
     /// <summary>
     /// Create MS Graph Client
     /// </summary>
-    public async Task<GraphServiceClient> CreateGraphClient() {
-      string token = await GetAccessToken().ConfigureAwait(false);
+    public async Task<GraphServiceClient> CreateGraphClient(CancellationToken token = default) {
+      string bearer = await GetAccessToken(token).ConfigureAwait(false);
 
-      if (string.IsNullOrWhiteSpace(token))
+      if (string.IsNullOrWhiteSpace(bearer))
         throw new DataException("Not connected");
 
       return new GraphServiceClient(this);
