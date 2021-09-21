@@ -1,6 +1,5 @@
-﻿using Microsoft.Identity.Client;
-using Microsoft.Graph;
-
+﻿using Microsoft.Graph;
+using Microsoft.Identity.Client;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -90,7 +89,7 @@ namespace MsGraph.Simple.Client {
 
     private string m_ConnectionString = "";
 
-    private List<string> m_Permissions = new ();
+    private List<string> m_Permissions = new();
 
     #endregion Private Data
 
@@ -149,7 +148,7 @@ namespace MsGraph.Simple.Client {
                callback => {
                  var (code, uri) = ParseMessage(callback.Message);
 
-                 ConnectingEventArgs args = new (this, code, uri);
+                 ConnectingEventArgs args = new(this, code, uri);
 
                  action(this, args);
 
@@ -333,16 +332,6 @@ namespace MsGraph.Simple.Client {
     public IReadOnlyList<string> Permissions => m_Permissions;
 
     /// <summary>
-    /// Application (MSA Client)
-    /// </summary>
-    public IPublicClientApplication Application { get; private set; }
-
-    /// <summary>
-    /// User Account
-    /// </summary>
-    public IAccount UserAccount { get; private set; }
-
-    /// <summary>
     /// Connected
     /// </summary>
     public bool Connected => UserAccount is not null;
@@ -369,7 +358,7 @@ namespace MsGraph.Simple.Client {
     /// <summary>
     /// Create Command
     /// </summary>
-    public MsGraphCommand CreateCommand() => new (this);
+    public MsGraphCommand CreateCommand() => new(this);
 
     /// <summary>
     /// Connecting Event
@@ -384,6 +373,16 @@ namespace MsGraph.Simple.Client {
     #endregion Public
 
     #region IAuthenticationProvider
+
+    /// <summary>
+    /// Application (MSA Client)
+    /// </summary>
+    public IPublicClientApplication Application { get; private set; }
+
+    /// <summary>
+    /// User Account
+    /// </summary>
+    public IAccount UserAccount { get; private set; }
 
     /// <summary>
     /// 

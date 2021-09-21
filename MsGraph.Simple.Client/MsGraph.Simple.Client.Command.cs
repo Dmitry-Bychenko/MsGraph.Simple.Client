@@ -137,7 +137,7 @@ namespace MsGraph.Simple.Client {
     /// <summary>
     /// Read JSON
     /// </summary>
-    public async Task<JsonDocument> ReadJsonAsync(string address, 
+    public async Task<JsonDocument> ReadJsonAsync(string address,
                                                   string query,
                                                   CancellationToken token) {
       if (address is null)

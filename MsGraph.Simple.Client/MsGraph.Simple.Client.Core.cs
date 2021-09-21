@@ -1,5 +1,3 @@
-﻿using System;
-
-namespace MsGraph.Simple.Client {
+﻿namespace MsGraph.Simple.Client {
 
 }
