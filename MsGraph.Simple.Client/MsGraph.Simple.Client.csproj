@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>MsGraph.Simple.Client.snk.pfx</AssemblyOriginatorKeyFile>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Dmitry Bychenko</Authors>
+    <Description>Simple MsGraph Client</Description>
+    <Copyright>Copyright (c) 2021 by Dmitry Bychenko</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Identity.Client" Version="4.35.1" />
+		<PackageReference Include="Microsoft.Graph" Version="4.0.0" />
+	</ItemGroup>
+
+</Project>
