@@ -5,10 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MsGraph.Simple.Client {
@@ -34,11 +37,38 @@ namespace MsGraph.Simple.Client {
 
     #region Public
 
+    /// <summary>
+    /// Connection
+    /// </summary>
     public MsGraphConnection Connection { get; }
 
-    public String Code { get; }
+    /// <summary>
+    /// Code
+    /// </summary>
+    public string Code { get; }
 
-    public String Url { get; }
+    /// <summary>
+    /// Url
+    /// </summary>
+    public string Url { get; }
+
+    /// <summary>
+    /// Show Authentication
+    /// </summary>
+    public bool ShowAuthentication() {
+      if (Connection is not null)
+        return false;
+
+      if (string.IsNullOrWhiteSpace(Url))
+        return false;
+
+      using (System.Diagnostics.Process.Start(new ProcessStartInfo {
+        FileName = Url,
+        UseShellExecute = true
+      })) { }
+
+      return true;
+    }
 
     #endregion Public
   }
@@ -53,6 +83,10 @@ namespace MsGraph.Simple.Client {
 
   public sealed class MsGraphConnection : IAuthenticationProvider, IEquatable<MsGraphConnection> {
     #region Private Data
+
+    private static readonly CookieContainer s_CookieContainer;
+
+    private static readonly HttpClient s_HttpClient;
 
     private string m_ConnectionString = "";
 
@@ -162,6 +196,29 @@ namespace MsGraph.Simple.Client {
 
     #region Create
 
+    static MsGraphConnection() {
+      try {
+        ServicePointManager.SecurityProtocol =
+          SecurityProtocolType.Tls |
+          SecurityProtocolType.Tls11 |
+          SecurityProtocolType.Tls12;
+      }
+      catch (NotSupportedException) {
+        ;
+      }
+
+      s_CookieContainer = new CookieContainer();
+
+      var handler = new HttpClientHandler() {
+        CookieContainer = s_CookieContainer,
+        Credentials = CredentialCache.DefaultCredentials,
+      };
+
+      s_HttpClient = new HttpClient(handler) {
+        Timeout = Timeout.InfiniteTimeSpan,
+      };
+    }
+
     /// <summary>
     /// Standard Constructor
     /// </summary>
@@ -176,6 +233,31 @@ namespace MsGraph.Simple.Client {
     #endregion Create
 
     #region Public
+
+    /// <summary>
+    /// Show MS Graph Explorer
+    /// </summary>
+    public static void ShowGraphExplorer() {
+      using (System.Diagnostics.Process.Start(new ProcessStartInfo {
+        FileName = @"https://developer.microsoft.com/en-us/graph/graph-explorer",
+        UseShellExecute = true
+      })) { }
+    }
+
+    /// <summary>
+    /// Show Azure Portal
+    /// </summary>
+    public static void ShowAzurePortal() {
+      using (System.Diagnostics.Process.Start(new ProcessStartInfo {
+        FileName = @"https://azure.microsoft.com/en-us/features/azure-portal",
+        UseShellExecute = true
+      })) { }
+    }
+
+    /// <summary>
+    /// Http Client
+    /// </summary>
+    public static HttpClient Client => s_HttpClient;
 
     /// <summary>
     /// Connection String
@@ -271,6 +353,23 @@ namespace MsGraph.Simple.Client {
     public Task<string> AccessToken {
       get => GetAccessToken();
     }
+
+    /// <summary>
+    /// Create MS Graph Client
+    /// </summary>
+    public async Task<GraphServiceClient> CreateGraphClient() {
+      string token = await GetAccessToken().ConfigureAwait(false);
+
+      if (string.IsNullOrWhiteSpace(token))
+        throw new DataException("Not connected");
+
+      return new GraphServiceClient(this);
+    }
+
+    /// <summary>
+    /// Create Command
+    /// </summary>
+    public MsGraphCommand CreateCommand() => new (this);
 
     /// <summary>
     /// Connecting Event
