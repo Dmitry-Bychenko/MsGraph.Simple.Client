@@ -9,6 +9,9 @@
     <Description>Simple MsGraph Client</Description>
     <Copyright>Copyright (c) 2021 by Dmitry Bychenko</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/Dmitry-Bychenko/MsGraph.Simple.Client</RepositoryUrl>
+    <RepositoryType>https://github.com/Dmitry-Bychenko/MsGraph.Simple.Client</RepositoryType>
+    <PackageReleaseNotes>Initial Implementation</PackageReleaseNotes>
   </PropertyGroup>
 
 	<ItemGroup>
