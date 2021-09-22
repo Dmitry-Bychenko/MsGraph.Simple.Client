@@ -2,7 +2,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,6 +30,11 @@ namespace MsGraph.Simple.Client.Graph {
       if (client is null)
         throw new ArgumentNullException(nameof(client));
 
+      token.ThrowIfCancellationRequested();
+
+      if (string.IsNullOrEmpty(directoryName))
+        return false;
+
       if (string.IsNullOrEmpty(userId)) {
         var me = await client
           .Me
@@ -40,32 +45,43 @@ namespace MsGraph.Simple.Client.Graph {
         userId = me.Id;
       }
 
-      if (string.IsNullOrWhiteSpace(directoryName))
-        return false;
+      string[] parts = directoryName.Split(
+        new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
 
-      var driveItem = new DriveItem {
-        Name = directoryName,
-        Folder = new Folder { },
-        AdditionalData = new Dictionary<string, object>()  {
-          {"@microsoft.graph.conflictBehavior", "replace"}
+      string currentPath = "";
+
+      for (int i = 0; i < parts.Length; ++i) {
+        var driveItem = new DriveItem {
+          Name = parts[i],
+          Folder = new Folder { },
+          AdditionalData = new Dictionary<string, object>()  {
+            {"@microsoft.graph.conflictBehavior", "replace"}
+          }
+        };
+
+        try {
+          var root = client
+            .Users[userId]
+            .Drive
+            .Root;
+
+          if (!string.IsNullOrEmpty(currentPath))
+            root = root.ItemWithPath(currentPath);
+
+          await root
+            .Children
+            .Request()
+            .AddAsync(driveItem, token)
+            .ConfigureAwait(false);
+
+          currentPath = System.IO.Path.Combine(currentPath, parts[i]);
         }
-      };
-
-      try {
-        await client
-          .Users[userId]
-          .Drive
-          .Root
-          .Children
-          .Request()
-          .AddAsync(driveItem, token)
-          .ConfigureAwait(false);
-
-        return true;
+        catch (ServiceException) {
+          return false;
+        }
       }
-      catch (ServiceException) {
-        return false;
-      }
+
+      return true;
     }
 
     /// <summary>
@@ -81,10 +97,13 @@ namespace MsGraph.Simple.Client.Graph {
     /// </summary>
     public static async Task<bool> DeleteDirectoryAsync(this GraphServiceClient client,
                                                              string userId,
-                                                             string fileName,
+                                                             string directoryName,
                                                              CancellationToken token = default) {
       if (client is null)
         throw new ArgumentNullException(nameof(client));
+
+      if (string.IsNullOrWhiteSpace(directoryName))
+        return false;
 
       if (string.IsNullOrEmpty(userId)) {
         var me = await client
@@ -96,15 +115,12 @@ namespace MsGraph.Simple.Client.Graph {
         userId = me.Id;
       }
 
-      if (string.IsNullOrWhiteSpace(fileName))
-        return false;
-
       try {
         await client
           .Users[userId]
           .Drive
           .Root
-          .ItemWithPath(fileName)
+          .ItemWithPath(directoryName)
           .Request()
           .DeleteAsync(token)
           .ConfigureAwait(false);
@@ -120,16 +136,18 @@ namespace MsGraph.Simple.Client.Graph {
     /// Delete Directory (in OneNote)
     /// </summary>
     public static async Task<bool> DeleteDirectoryAsync(this GraphServiceClient client,
-                                                             string fileName,
+                                                             string directoryName,
                                                              CancellationToken token = default) =>
-      await DeleteDirectoryAsync(client, null, fileName, token).ConfigureAwait(false);
+      await DeleteDirectoryAsync(client, null, directoryName, token).ConfigureAwait(false);
 
     /// <summary>
     /// Enumerate Files
     /// </summary>
     public static async IAsyncEnumerable<string> EnumerateFilesAsync(this GraphServiceClient client,
                                                                           string userId,
-                                                                          string directory,
+                                                                          string path,
+                                                                          Func<string, bool> filter = default,
+                                                                          SearchOption options = default,
                                                                           [EnumeratorCancellation]
                                                                           CancellationToken token = default) {
       if (client is null)
@@ -147,35 +165,45 @@ namespace MsGraph.Simple.Client.Graph {
 
       token.ThrowIfCancellationRequested();
 
-      var path = client
+      var rootPath = client
           .Users[userId]
           .Drive
           .Root;
 
-      if (!string.IsNullOrEmpty(directory))
-        path = path.ItemWithPath(directory);
+      Queue<string> agenda = new();
 
-      IDriveItemChildrenCollectionPage data = null;
+      agenda.Enqueue(path ?? "");
 
-      try {
-        data = await path
-          .Children
-          .Request()
-          .GetAsync(token)
-          .ConfigureAwait(false);
-      }
-      catch (ServiceException) {
-        yield break;
-      }
+      while (agenda.Count > 0) {
+        string currentPath = agenda.Dequeue();
 
-      var items = data
-        .Where(item => item.Folder == null)
-        .Select(item => item.Name);
+        var currentRootPath = string.IsNullOrEmpty(currentPath)
+          ? rootPath
+          : rootPath.ItemWithPath(currentPath);
 
-      foreach (var item in items) {
-        token.ThrowIfCancellationRequested();
+        IDriveItemChildrenCollectionPage data;
 
-        yield return item;
+        try {
+          data = await currentRootPath
+            .Children
+            .Request()
+            .GetAsync(token)
+            .ConfigureAwait(false);
+        }
+        catch (ServiceException) {
+          yield break;
+        }
+
+        foreach (var item in data) {
+          token.ThrowIfCancellationRequested();
+
+          if (item.Folder is null) {
+            if (filter is null || filter(item.Name))
+              yield return Path.Combine(currentPath, item.Name);
+          }
+          else if (options == SearchOption.AllDirectories)
+            agenda.Enqueue(Path.Combine(currentPath, item.Name));
+        }
       }
     }
 
@@ -183,11 +211,13 @@ namespace MsGraph.Simple.Client.Graph {
     /// Enumerate Files
     /// </summary>
     public static async IAsyncEnumerable<string> EnumerateFilesAsync(this GraphServiceClient client,
-                                                                          string directory,
+                                                                          string path,
+                                                                          Func<string, bool> filter = default,
+                                                                          SearchOption options = default,
                                                                           [EnumeratorCancellation]
                                                                           CancellationToken token = default) {
-      await foreach (var item in EnumerateFilesAsync(client, null, directory, token).ConfigureAwait(false))
-        yield return item;
+      await foreach (string file in EnumerateFilesAsync(client, null, path, filter, options, token).ConfigureAwait(false))
+        yield return file;
     }
 
     /// <summary>
@@ -195,7 +225,9 @@ namespace MsGraph.Simple.Client.Graph {
     /// </summary>
     public static async IAsyncEnumerable<string> EnumerateDirectoriesAsync(this GraphServiceClient client,
                                                                                 string userId,
-                                                                                string directory,
+                                                                                string path,
+                                                                                Func<string, bool> filter = default,
+                                                                                SearchOption options = default,
                                                                                 [EnumeratorCancellation]
                                                                                 CancellationToken token = default) {
       if (client is null)
@@ -213,28 +245,46 @@ namespace MsGraph.Simple.Client.Graph {
 
       token.ThrowIfCancellationRequested();
 
-      var path = client
-        .Users[userId]
-        .Drive
-        .Root;
+      var rootPath = client
+          .Users[userId]
+          .Drive
+          .Root;
 
-      if (!string.IsNullOrEmpty(directory))
-        path = path.ItemWithPath(directory);
+      Queue<string> agenda = new();
 
-      var data = await path
-        .Children
-        .Request()
-        .GetAsync(token)
-        .ConfigureAwait(false);
+      agenda.Enqueue(path ?? "");
 
-      var items = data
-        .Where(item => item.Folder != null)
-        .Select(item => item.Name);
+      while (agenda.Count > 0) {
+        string currentPath = agenda.Dequeue();
 
-      foreach (var item in items) {
-        token.ThrowIfCancellationRequested();
+        var currentRootPath = string.IsNullOrEmpty(currentPath)
+          ? rootPath
+          : rootPath.ItemWithPath(currentPath);
 
-        yield return item;
+        IDriveItemChildrenCollectionPage data;
+
+        try {
+          data = await currentRootPath
+            .Children
+            .Request()
+            .GetAsync(token)
+            .ConfigureAwait(false);
+        }
+        catch (ServiceException) {
+          yield break;
+        }
+
+        foreach (var item in data) {
+          token.ThrowIfCancellationRequested();
+
+          if (item.Folder is not null) {
+            if (options == SearchOption.AllDirectories)
+              agenda.Enqueue(Path.Combine(currentPath, item.Name));
+
+            if (filter is null || filter(item.Name))
+              yield return Path.Combine(currentPath, item.Name);
+          }
+        }
       }
     }
 
@@ -242,11 +292,13 @@ namespace MsGraph.Simple.Client.Graph {
     /// Enumerate Directories
     /// </summary>
     public static async IAsyncEnumerable<string> EnumerateDirectoriesAsync(this GraphServiceClient client,
-                                                                                string directory,
+                                                                                string path,
+                                                                                Func<string, bool> filter = default,
+                                                                                SearchOption options = default,
                                                                                 [EnumeratorCancellation]
                                                                                 CancellationToken token = default) {
-      await foreach (var item in EnumerateDirectoriesAsync(client, null, directory, token).ConfigureAwait(false))
-        yield return item;
+      await foreach (string file in EnumerateDirectoriesAsync(client, null, path, filter, options, token).ConfigureAwait(false))
+        yield return file;
     }
 
     #endregion Public

@@ -342,6 +342,14 @@ namespace MsGraph.Simple.Client {
 
     /// <summary>
     /// Connect Async
+    /// 
+    /// Connection String, parts:
+    /// 
+    /// Tenant      - optional
+    /// Application
+    /// Redirect    - optional
+    /// Login       - optional
+    /// Password
     /// </summary>
     public async Task<bool> ConnectAsync(CancellationToken token = default) {
       string bearer = await GetAccessToken(token).ConfigureAwait(false);
@@ -359,7 +367,7 @@ namespace MsGraph.Simple.Client {
     /// <summary>
     /// Create MS Graph Client
     /// </summary>
-    public async Task<GraphServiceClient> CreateGraphClient(CancellationToken token = default) {
+    public async Task<GraphServiceClient> CreateGraphClientAsync(CancellationToken token = default) {
       string bearer = await GetAccessToken(token).ConfigureAwait(false);
 
       if (string.IsNullOrWhiteSpace(bearer))

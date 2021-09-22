@@ -1,78 +1,97 @@
-﻿using System;
+﻿using Microsoft.Graph;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
+using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
-
-using Microsoft.Graph;
-
-using MsGraph.Simple.Client;
-using MsGraph.Simple.Client.Graph;
 
 namespace TestForm {
-  /*
+
   public static class Experiments {
 
-    public static async IAsyncEnumerable<T> EnumerateAsync<T>(this IBaseRequest request,
-                                                                   int pageSize = default,
-                                                                   [EnumeratorCancellation]
-                                                                   CancellationToken token = default) {
-      if (request is null)
-        throw new ArgumentNullException(nameof(request));
+    /// <summary>
+    /// Enumerate Directories
+    /// </summary>
+    public static async IAsyncEnumerable<string> EnumerateDirectoriesAsync(this GraphServiceClient client,
+                                                                                string userId,
+                                                                                string path,
+                                                                                Func<string, bool> filter = default,
+                                                                                SearchOption options = default,
+                                                                                [EnumeratorCancellation]
+                                                                                CancellationToken token = default) {
+      if (client is null)
+        throw new ArgumentNullException(nameof(client));
 
-      pageSize = pageSize <= 0 || pageSize > 999
-        ? 100
-        : pageSize;
+      if (string.IsNullOrEmpty(userId)) {
+        var me = await client
+          .Me
+          .Request()
+          .GetAsync(token)
+          .ConfigureAwait(false);
 
-      var topMethod = request.GetType().GetMethod("Top");
+        userId = me.Id;
+      }
 
-      if (topMethod is null)
-        yield break;
+      token.ThrowIfCancellationRequested();
 
-      var topPage = topMethod.Invoke(request, new object[] { pageSize });
+      var rootPath = client
+          .Users[userId]
+          .Drive
+          .Root;
 
-      while (topPage is not null) {
+      Queue<string> agenda = new Queue<string>();
 
-        var getAsyncMethod = topPage.GetType().GetMethod("GetAsync");
+      agenda.Enqueue(path ?? "");
 
-        if (getAsyncMethod is null)
+      while (agenda.Count > 0) {
+        string currentPath = agenda.Dequeue();
+
+        var currentRootPath = string.IsNullOrEmpty(currentPath)
+          ? rootPath
+          : rootPath.ItemWithPath(currentPath);
+
+        IDriveItemChildrenCollectionPage data;
+
+        try {
+          data = await currentRootPath
+            .Children
+            .Request()
+            .GetAsync(token)
+            .ConfigureAwait(false);
+        }
+        catch (ServiceException) {
           yield break;
-
-        var objTask = getAsyncMethod.Invoke(topPage, new object[] { token});
-          
-      
-        await (objTask as Task).ConfigureAwait(false);
-
-        var propResult = objTask.GetType().GetProperty("Result");
-
-        if (propResult is null)
-          yield break;
-
-        var taskResult = propResult.GetValue(objTask) as IEnumerable<T>;
-
-        if (taskResult is null)
-          yield break;
-
-        foreach (T item in taskResult) {
-          token.ThrowIfCancellationRequested();
-
-          yield return item;
         }
 
-        var nextProperty = taskResult.GetType().GetProperty("NextPageRequest");
+        foreach (var item in data) {
+          token.ThrowIfCancellationRequested();
 
-        if (nextProperty is null)
-          yield break;
+          if (item.Folder is not null) {
+            if (options.HasFlag(SearchOption.AllDirectories))
+              agenda.Enqueue(Path.Combine(currentPath, item.Name));
 
-        topPage = nextProperty.GetValue(taskResult);
+            if (filter is null || filter(item.Name))
+              yield return Path.Combine(currentPath, item.Name);
+          }
+        }
       }
     }
+
+    /// <summary>
+    /// Enumerate Directories
+    /// </summary>
+    public static async IAsyncEnumerable<string> EnumerateDirectoriesAsync(this GraphServiceClient client,
+                                                                                string path,
+                                                                                Func<string, bool> filter = default,
+                                                                                SearchOption options = default,
+                                                                                [EnumeratorCancellation]
+                                                                                CancellationToken token = default) {
+      await foreach (string file in EnumerateDirectoriesAsync(client, null, path, filter, options, token).ConfigureAwait(false))
+        yield return file;
+    }
+
   }
-  */
+
+
 }

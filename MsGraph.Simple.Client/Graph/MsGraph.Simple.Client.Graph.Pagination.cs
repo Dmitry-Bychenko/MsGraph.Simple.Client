@@ -1,9 +1,6 @@
 ﻿using Microsoft.Graph;
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -70,9 +67,7 @@ namespace MsGraph.Simple.Client.Graph {
         if (propResult is null)
           yield break;
 
-        var taskResult = propResult.GetValue(objTask) as IEnumerable<T>;
-
-        if (taskResult is null)
+        if (propResult.GetValue(objTask) is not IEnumerable<T> taskResult)
           yield break;
 
         foreach (T item in taskResult) {

@@ -23,6 +23,55 @@ namespace MsGraph.Simple.Client.Graph {
     #region Public
 
     /// <summary>
+    /// Delete File (in OneNote)
+    /// </summary>
+    public static async Task<bool> DeleteFileAsync(this GraphServiceClient client,
+                                                        string userId,
+                                                        string fileName,
+                                                        CancellationToken token = default) {
+      if (client is null)
+        throw new ArgumentNullException(nameof(client));
+
+      if (string.IsNullOrWhiteSpace(fileName))
+        return false;
+
+      if (string.IsNullOrEmpty(userId)) {
+        var me = await client
+          .Me
+          .Request()
+          .GetAsync(token)
+          .ConfigureAwait(false);
+
+        userId = me.Id;
+      }
+
+      try {
+        await client
+          .Users[userId]
+          .Drive
+          .Root
+          .ItemWithPath(fileName)
+          .Request()
+          .DeleteAsync(token)
+          .ConfigureAwait(false);
+
+        return true;
+      }
+      catch (ServiceException) {
+        return false;
+      }
+    }
+
+    /// <summary>
+    /// Delete Directory (in OneNote)
+    /// </summary>
+    public static async Task<bool> DeleteFileAsync(this GraphServiceClient client,
+                                                        string fileName,
+                                                        CancellationToken token = default) =>
+      await DeleteFileAsync(client, null, fileName, token).ConfigureAwait(false);
+
+
+    /// <summary>
     /// Read File
     /// </summary>
     public static async Task<byte[]> ReadAllBytes(this GraphServiceClient client,
@@ -109,6 +158,13 @@ namespace MsGraph.Simple.Client.Graph {
       if (data is null)
         return false;
 
+      string dir = System.IO.Path.GetDirectoryName(fileName);
+
+      if (!string.IsNullOrWhiteSpace(dir)) {
+        if (!await OneNoteDirectory.CreateDirectoryAsync(client, userId, dir, token).ConfigureAwait(false))
+          return false;
+      }
+
       token.ThrowIfCancellationRequested();
 
       try {
@@ -119,8 +175,7 @@ namespace MsGraph.Simple.Client.Graph {
           .Drive
           .Root;
 
-        if (!string.IsNullOrEmpty(fileName))
-          path = path.ItemWithPath(fileName);
+        path = path.ItemWithPath(fileName);
 
         var result = await path
           .Content
@@ -346,6 +401,56 @@ namespace MsGraph.Simple.Client.Graph {
       await foreach (var item in ReadLines(client, null, fileName, encoding, token).ConfigureAwait(false))
         yield return item;
     }
+
+    /// <summary>
+    /// Write All Text
+    /// </summary>
+    public static async Task<bool> WriteAllText(this GraphServiceClient client,
+                                                     string userId,
+                                                     string fileName,
+                                                     string text,
+                                                     Encoding encoding = null,
+                                                     CancellationToken token = default) {
+      text ??= "";
+      encoding ??= Encoding.Default;
+
+      return await WriteAllBytes(client, userId, fileName, encoding.GetBytes(text), token).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Write All Text
+    /// </summary>
+    public static async Task<bool> WriteAllText(this GraphServiceClient client,
+                                                     string fileName,
+                                                     string text,
+                                                     Encoding encoding = null,
+                                                     CancellationToken token = default) =>
+      await WriteAllText(client, null, fileName, text, encoding, token).ConfigureAwait(false);
+
+    /// <summary>
+    /// Write All Text
+    /// </summary>
+    public static async Task<bool> WriteAllLines(this GraphServiceClient client,
+                                                      string userId,
+                                                      string fileName,
+                                                      IEnumerable<string> lines,
+                                                      Encoding encoding = null,
+                                                      CancellationToken token = default) {
+      if (lines is null)
+        throw new ArgumentNullException(nameof(lines));
+
+      return await WriteAllText(client, userId, fileName, string.Join(Environment.NewLine, lines), encoding, token).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Write All Text
+    /// </summary>
+    public static async Task<bool> WriteAllLines(this GraphServiceClient client,
+                                                      string fileName,
+                                                      IEnumerable<string> lines,
+                                                      Encoding encoding = null,
+                                                      CancellationToken token = default) =>
+      await WriteAllLines(client, null, fileName, lines, encoding, token).ConfigureAwait(false);
 
     #endregion Public
   }

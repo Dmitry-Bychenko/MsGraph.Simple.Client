@@ -9,6 +9,14 @@ using System.Threading.Tasks;
 
 namespace MsGraph.Simple.Client.Json {
 
+  //-------------------------------------------------------------------------------------------------------------------
+  //
+  /// <summary>
+  /// User Images (as bytes)
+  /// </summary>
+  //
+  //-------------------------------------------------------------------------------------------------------------------
+
   public static class UserImage {
     #region Public
 
@@ -55,7 +63,7 @@ namespace MsGraph.Simple.Client.Json {
     /// Get Image Data
     /// </summary>
     public static async Task<byte[]> ReadImageBytesAsync(this GraphServiceClient client,
-                                                         CancellationToken token = default) =>
+                                                              CancellationToken token = default) =>
       await ReadImageBytesAsync(client, null, token).ConfigureAwait(false);
 
     /// <summary>

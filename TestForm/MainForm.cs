@@ -1,28 +1,62 @@
-﻿using System;
+﻿using MsGraph.Simple.Client;
+using MsGraph.Simple.Client.Graph;
+using MsGraph.Simple.Client.Graph.Storage;
+
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-using Microsoft.Graph;
-
-using MsGraph.Simple.Client;
-using MsGraph.Simple.Client.Graph;
-
 namespace TestForm {
-  
+
   public partial class MainForm : Form {
     private async Task CorePerform() {
       string connectionString =
-        "";
+        "Connection String Here";
+        ;
 
-      MsGraphConnection conn = new (connectionString);
+      Enterprise users = await Enterprise.CreateAsync(connectionString);
 
-      var client = await conn.CreateGraphClient();
+      rtbMain.Text = string.Join(Environment.NewLine, users
+        .Users
+        .Select(u => $"{u.User.DisplayName}"));
+
+      /*
+      MsGraphConnection conn = new(connectionString);
+
+      var client = await conn.CreateGraphClientAsync();
+
+      List<string> list = new();
+
+      //var result = await OneNoteFile.DeleteFileAsync(client, @"abc\def\pqr.txt");
+
+      //string text = await OneNoteFile.ReadAllText(client, @"abc/def/pqr.txt");
+
+      var me = await client
+        .Me
+        .Request()
+        .GetAsync();
+
+      bool result = await UserSchema.DropExtensionAsync(
+        client,
+        me.Id,
+        "HR.Russian.Names"
+        );
+      */
+
+      /*
+      var data = OneNoteDirectory.EnumerateFilesAsync(client, "", x => true, SearchOption.AllDirectories);
+
+      await foreach (var item in data) {
+        list.Add(item);
+      }
+      */
+
+      //rtbMain.Text = result ? "OK" : "Failed";
+
+      /*
+      
 
       List<string> list = new List<string>();
 
@@ -35,6 +69,7 @@ namespace TestForm {
       await foreach(var item in data) {
         list.Add(item.DisplayName);
       }
+      */
 
       /*
       var data = await client
@@ -56,7 +91,7 @@ namespace TestForm {
       }
       */
 
-      rtbMain.Text = string.Join(Environment.NewLine, list);
+      //rtbMain.Text = string.Join(Environment.NewLine, list);
 
       /*
       var user = await client
