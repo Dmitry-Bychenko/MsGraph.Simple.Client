@@ -10,10 +10,11 @@
     <Copyright>Copyright (c) 2021 by Dmitry Bychenko</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/Dmitry-Bychenko/MsGraph.Simple.Client</RepositoryUrl>
-    <RepositoryType>https://github.com/Dmitry-Bychenko/MsGraph.Simple.Client</RepositoryType>
+    <RepositoryType></RepositoryType>
     <PackageReleaseNotes>Initial Implementation</PackageReleaseNotes>
     <PackageIcon>MsGraph.png</PackageIcon>
     <PackageIconUrl />
+    <PackageProjectUrl>https://github.com/Dmitry-Bychenko/MsGraph.Simple.Client</PackageProjectUrl>
   </PropertyGroup>
 
 	<ItemGroup>
