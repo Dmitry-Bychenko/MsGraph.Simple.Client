@@ -1,40 +1,24 @@
-﻿using Microsoft.Graph;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
+using System.Drawing;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
-namespace MsGraph.Simple.Client.Graph {
+using Microsoft.Graph;
 
-  //-------------------------------------------------------------------------------------------------------------------
-  //
-  /// <summary>
-  /// Paged Requests
-  /// </summary>
-  //
-  //-------------------------------------------------------------------------------------------------------------------
+using MsGraph.Simple.Client;
+using MsGraph.Simple.Client.Graph;
 
-  public static class MsGraphPaginationExtensions {
-    #region Public
+namespace TestForm {
+  /*
+  public static class Experiments {
 
-    /// <summary>
-    /// Pagination
-    /// </summary>
-    /// <example>
-    /// <code>
-    /// var data = client
-    ///    .Users
-    ///    .Request()
-    ///    .Expand("Manager,Extensions")
-    ///    .EnumerateAsync<User>();
-    ///    
-    /// await foreach (var user in data.ConfigureAwait(false)) {...}
-    /// </code>
-    /// </example>
     public static async IAsyncEnumerable<T> EnumerateAsync<T>(this IBaseRequest request,
                                                                    int pageSize = default,
                                                                    [EnumeratorCancellation]
@@ -42,8 +26,8 @@ namespace MsGraph.Simple.Client.Graph {
       if (request is null)
         throw new ArgumentNullException(nameof(request));
 
-      pageSize = pageSize <= 0 || pageSize > MsGraphCommand.MaximumPageSize
-        ? MsGraphCommand.MaximumPageSize
+      pageSize = pageSize <= 0 || pageSize > 999
+        ? 100
         : pageSize;
 
       var topMethod = request.GetType().GetMethod("Top");
@@ -60,9 +44,9 @@ namespace MsGraph.Simple.Client.Graph {
         if (getAsyncMethod is null)
           yield break;
 
-        var objTask = getAsyncMethod.Invoke(topPage, new object[] { token });
-
-
+        var objTask = getAsyncMethod.Invoke(topPage, new object[] { token});
+          
+      
         await (objTask as Task).ConfigureAwait(false);
 
         var propResult = objTask.GetType().GetProperty("Result");
@@ -89,9 +73,6 @@ namespace MsGraph.Simple.Client.Graph {
         topPage = nextProperty.GetValue(taskResult);
       }
     }
-
-    #endregion Public
   }
-
-
+  */
 }
