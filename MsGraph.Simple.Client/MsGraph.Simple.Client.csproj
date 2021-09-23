@@ -11,10 +11,11 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/Dmitry-Bychenko/MsGraph.Simple.Client</RepositoryUrl>
     <RepositoryType></RepositoryType>
-    <PackageReleaseNotes>Initial Implementation</PackageReleaseNotes>
+    <PackageReleaseNotes>Bookmarks, Loads</PackageReleaseNotes>
     <PackageIcon>MsGraph.png</PackageIcon>
     <PackageIconUrl />
     <PackageProjectUrl>https://github.com/Dmitry-Bychenko/MsGraph.Simple.Client</PackageProjectUrl>
+    <Version>1.0.0.1</Version>
   </PropertyGroup>
 
 	<ItemGroup>

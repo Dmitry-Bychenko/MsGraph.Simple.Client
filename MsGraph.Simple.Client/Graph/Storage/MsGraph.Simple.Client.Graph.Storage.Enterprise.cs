@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -43,6 +44,8 @@ namespace MsGraph.Simple.Client.Graph.Storage {
 
     private readonly Dictionary<string, GraphUser> m_UserDict = new(StringComparer.OrdinalIgnoreCase);
 
+    private readonly ConcurrentDictionary<string, GraphUser> m_BookMarks = new (StringComparer.OrdinalIgnoreCase);
+
     #endregion Private Data
 
     #region Algorithm
@@ -59,6 +62,13 @@ namespace MsGraph.Simple.Client.Graph.Storage {
     }
 
     private async Task CoreLoadAll() {
+      foreach (var user in m_Users)
+        user.Enterprise = null;
+
+      m_UserDict.Clear();
+      m_Users.Clear();
+      m_BookMarks.Clear();
+
       int pageSize = 999;
 
       var data = await Client
@@ -196,9 +206,43 @@ namespace MsGraph.Simple.Client.Graph.Storage {
       if (string.IsNullOrWhiteSpace(value))
         return null;
 
-      return m_UserDict.TryGetValue(value?.Trim(), out var result)
-        ? result
-        : null;
+      value = value.Trim();
+
+      if (m_UserDict.TryGetValue(value, out var result))
+        return result;
+
+      if (m_BookMarks.TryGetValue(value, out result))
+        return result;
+
+      return null;
+    }
+
+    /// <summary>
+    /// Load 
+    /// </summary>
+    public async Task LoadAsync() => await CoreLoadAll(); 
+
+    /// <summary>
+    /// Add Bookmark
+    /// </summary>
+    public bool AddBookmark(string mark, GraphUser user) {
+      if (string.IsNullOrWhiteSpace(mark))
+        return false;
+
+      if (user is null || user.Enterprise != this)
+        return false;
+
+      return m_BookMarks.TryAdd(mark, user);
+    }
+
+    /// <summary>
+    /// Delete Bookmark
+    /// </summary>
+    public bool DeleteBookmark(string mark) {
+      if (string.IsNullOrWhiteSpace(mark))
+        return false;
+
+      return m_BookMarks.Remove(mark, out var _);
     }
 
     #endregion Public

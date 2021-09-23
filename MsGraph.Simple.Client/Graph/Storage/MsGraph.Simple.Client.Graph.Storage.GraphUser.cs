@@ -34,17 +34,17 @@ namespace MsGraph.Simple.Client.Graph.Storage {
     /// <summary>
     /// Enterprise
     /// </summary>
-    public Enterprise Enterprise { get; }
+    public Enterprise Enterprise { get; internal set; }
 
     /// <summary>
     /// Azure AD Connection
     /// </summary>
-    public MsGraphConnection Connection => Enterprise.Connection;
+    public MsGraphConnection Connection => Enterprise?.Connection;
 
     /// <summary>
     /// Graph Service Client
     /// </summary>
-    public GraphServiceClient Client => Enterprise.Client;
+    public GraphServiceClient Client => Enterprise?.Client;
 
     /// <summary>
     /// Is Modified
