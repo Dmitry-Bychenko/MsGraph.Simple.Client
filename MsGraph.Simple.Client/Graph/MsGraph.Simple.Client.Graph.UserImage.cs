@@ -103,6 +103,85 @@ namespace MsGraph.Simple.Client.Json {
         .ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Get Image Stream
+    /// </summary>
+    public static async Task<Stream> ReadImageAsync(this GraphServiceClient client,
+                                                         string userId,
+                                                         CancellationToken token = default) {
+      if (client is null)
+        throw new ArgumentNullException(nameof(client));
+
+      token.ThrowIfCancellationRequested();
+
+      if (string.IsNullOrEmpty(userId)) {
+        var me = await client
+          .Me
+          .Request()
+          .GetAsync(token)
+          .ConfigureAwait(false);
+
+        userId = me.Id;
+      }
+
+      return await client
+        .Users[userId]
+        .Photo
+        .Content
+        .Request()
+        .GetAsync(token)
+        .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Get Image Stream
+    /// </summary>
+    public static async Task<Stream> ReadImageAsync(this GraphServiceClient client,
+                                                         CancellationToken token = default) =>
+      await ReadImageAsync(client, null, token).ConfigureAwait(false);
+
+    /// <summary>
+    /// Set Image Data
+    /// </summary>
+    public static async Task WriteImageAsync(this GraphServiceClient client,
+                                                  string userId,
+                                                  Stream source,
+                                                  CancellationToken token = default) {
+      if (client is null)
+        throw new ArgumentNullException(nameof(client));
+
+      if (source is null)
+        throw new ArgumentNullException(nameof(source));
+
+      token.ThrowIfCancellationRequested();
+
+      if (string.IsNullOrEmpty(userId)) {
+        var me = await client
+          .Me
+          .Request()
+          .GetAsync(token)
+          .ConfigureAwait(false);
+
+        userId = me.Id;
+      }
+
+      await client
+        .Users[userId]
+        .Photo
+        .Content
+        .Request()
+        .PutAsync(source, token)
+        .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Set Image Data
+    /// </summary>
+    public static async Task WriteImageAsync(this GraphServiceClient client,
+                                                  Stream source,
+                                                  CancellationToken token = default) =>
+      await WriteImageAsync(client, null, token).ConfigureAwait(false);
+
     #endregion Public
   }
 

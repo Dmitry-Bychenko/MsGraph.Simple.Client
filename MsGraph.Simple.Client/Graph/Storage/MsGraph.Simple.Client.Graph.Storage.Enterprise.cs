@@ -220,7 +220,7 @@ namespace MsGraph.Simple.Client.Graph.Storage {
     /// <summary>
     /// Load 
     /// </summary>
-    public async Task LoadAsync() => await CoreLoadAll(); 
+    public async Task LoadAsync() => await CoreLoadAll().ConfigureAwait(false); 
 
     /// <summary>
     /// Add Bookmark
@@ -243,6 +243,13 @@ namespace MsGraph.Simple.Client.Graph.Storage {
         return false;
 
       return m_BookMarks.Remove(mark, out var _);
+    }
+
+    /// <summary>
+    /// Clear Bookmarks
+    /// </summary>
+    public void ClearBookmarks() {
+      m_BookMarks.Clear();
     }
 
     #endregion Public
