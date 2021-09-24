@@ -57,6 +57,16 @@ namespace MsGraph.Simple.Client.Graph.Storage {
     public GraphUser Manager => Enterprise.FindUser(User.Manager?.Id);
 
     /// <summary>
+    /// Hierarchy
+    /// </summary>
+    public IEnumerable<GraphUser> Hierarchy {
+      get {
+        for (var item = this; item is not null; item = item.Manager)
+          yield return item;
+      }
+    }
+
+    /// <summary>
     /// Subordinate
     /// </summary>
     public IEnumerable<GraphUser> Subordinate => Enterprise

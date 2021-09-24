@@ -28,6 +28,14 @@ namespace MsGraph.Simple.Client.Graph {
     #region Public
 
     /// <summary>
+    /// Hierarchy
+    /// </summary>
+    public static IEnumerable<User> Hierarchy(this User user) {
+      for (User current = user; current is not null; current = current.Manager as User)
+        yield return current;
+    }
+
+    /// <summary>
     /// Extension By Name (null when not found)
     /// </summary>
     public static Extension ExtensionByName(this User user, string name) {
@@ -64,30 +72,6 @@ namespace MsGraph.Simple.Client.Graph {
 
       return NullElement;
     }
-
-    /*
-
-    POST https://graph.microsoft.com/v1.0/me/extensions
-    {
-         "@odata.type": "microsoft.graph.openTypeExtension",
-         "extensionName": "Nedra.HR.Buddy",
-
-         "employeeBuddy": null,
-         "levelUpDate": null,
-         "welcomeLetter": false
-    }
-
-    POST https://graph.microsoft.com/v1.0/me/extensions
-    {
-         "@odata.type": "microsoft.graph.openTypeExtension",
-         "extensionName": "Nedra.HR.Birthday",
-
-         "employeeBirthday": "1974-07-08T00:00:00.000Z",
-         "employeeGreetings": ["a", "b", "c" ]
-    }
-
-
-    */
 
     /// <summary>
     /// Create Extension if it doesn't exist
