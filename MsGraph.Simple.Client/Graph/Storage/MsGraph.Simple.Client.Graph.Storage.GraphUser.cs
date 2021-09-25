@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace MsGraph.Simple.Client.Graph.Storage {
 
@@ -29,7 +30,7 @@ namespace MsGraph.Simple.Client.Graph.Storage {
     /// <summary>
     /// User
     /// </summary>
-    public User User { get; }
+    public User User { get; private set; }
 
     /// <summary>
     /// Enterprise
@@ -89,6 +90,27 @@ namespace MsGraph.Simple.Client.Graph.Storage {
           result = manager;
         }
       }
+    }
+
+    /// <summary>
+    /// Delete
+    /// </summary>
+    public async Task<bool> Delete() {
+      if (User is null)
+        return false;
+
+      await Client
+        .Users[User.Id]
+        .Request()
+        .DeleteAsync();
+
+      User = null;
+
+      Enterprise?.CoreRemove(this);
+
+      Enterprise = null;
+
+      return true;
     }
 
     /// <summary>

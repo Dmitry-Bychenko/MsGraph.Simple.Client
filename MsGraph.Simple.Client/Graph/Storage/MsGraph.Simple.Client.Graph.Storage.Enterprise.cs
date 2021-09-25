@@ -50,6 +50,26 @@ namespace MsGraph.Simple.Client.Graph.Storage {
 
     #region Algorithm
 
+    internal void CoreRemove(GraphUser user) {
+      m_Users.RemoveAll(item => item == user);
+
+      var keys = m_UserDict
+        .Where(pair => pair.Value == user)
+        .Select(pair => pair.Key)
+        .ToList();
+
+      foreach (var key in keys)
+        m_UserDict.Remove(key);
+
+      keys = m_BookMarks
+        .Where(pair => pair.Value == user)
+        .Select(pair => pair.Key)
+        .ToList();
+
+      foreach (var key in keys)
+        m_BookMarks.Remove(key, out var _);
+    }
+
     private static string AllFields() {
       var fields = typeof(User)
         .GetProperties()
@@ -198,6 +218,47 @@ namespace MsGraph.Simple.Client.Graph.Storage {
     /// Users
     /// </summary>
     public IReadOnlyList<GraphUser> Users => m_Users;
+
+    /// <summary>
+    /// Add new user
+    /// </summary>
+    public GraphUser Add(User user) {
+      if (user is null)
+        return null;
+
+      if (m_UserDict.TryGetValue(user.Id, out var item))
+        return item;
+
+      item = new GraphUser(this, user);
+
+      m_Users.Add(item);
+
+      m_UserDict.TryAdd(item.User.Id.Trim(), item);
+      m_UserDict.TryAdd(item.User.UserPrincipalName.Trim(), item);
+
+      if (!string.IsNullOrWhiteSpace(item.User.DisplayName))
+        m_UserDict.TryAdd(item.User.DisplayName.Trim(), item);
+
+      if (!string.IsNullOrWhiteSpace(item.User.Mail))
+        m_UserDict.TryAdd(item.User.Mail.Trim(), item);
+
+      if (!string.IsNullOrWhiteSpace(item.User.EmployeeId))
+        m_UserDict.TryAdd(item.User.EmployeeId.Trim(), item);
+
+      return item;
+    }
+
+    /// <summary>
+    /// Delete user (from Azure Active Directory)
+    /// </summary>
+    public async Task<bool> Delete(GraphUser user) {
+      if (user is null)
+        return false;
+      if (user.Enterprise != this)
+        return false;
+
+      return await user.Delete();
+    }
 
     /// <summary>
     /// Find User
