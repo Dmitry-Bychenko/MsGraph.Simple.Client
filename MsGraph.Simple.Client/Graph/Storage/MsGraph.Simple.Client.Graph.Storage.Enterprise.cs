@@ -249,7 +249,7 @@ namespace MsGraph.Simple.Client.Graph.Storage {
     }
 
     /// <summary>
-    /// Delete user (from Azure Active Directory)
+    /// Delete user (from Azure Active Directory as well)
     /// </summary>
     public async Task<bool> Delete(GraphUser user) {
       if (user is null)
@@ -259,6 +259,19 @@ namespace MsGraph.Simple.Client.Graph.Storage {
 
       return await user.Delete();
     }
+
+    /// <summary>
+    /// Remove user
+    /// </summary>
+    public bool Remove(GraphUser user) {
+      if (user is null)
+        return false;
+      if (user.Enterprise != this)
+        return false;
+
+      return user.Remove();
+    }
+
 
     /// <summary>
     /// Find User

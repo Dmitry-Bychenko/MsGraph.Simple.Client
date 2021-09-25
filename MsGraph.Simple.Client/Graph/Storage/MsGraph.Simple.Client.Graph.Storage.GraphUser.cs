@@ -93,7 +93,7 @@ namespace MsGraph.Simple.Client.Graph.Storage {
     }
 
     /// <summary>
-    /// Delete
+    /// Delete (from Azure AD as well)
     /// </summary>
     public async Task<bool> Delete() {
       if (User is null)
@@ -103,6 +103,22 @@ namespace MsGraph.Simple.Client.Graph.Storage {
         .Users[User.Id]
         .Request()
         .DeleteAsync();
+
+      User = null;
+
+      Enterprise?.CoreRemove(this);
+
+      Enterprise = null;
+
+      return true;
+    }
+
+    /// <summary>
+    /// Remove 
+    /// </summary>
+    public bool Remove() {
+      if (User is null)
+        return false;
 
       User = null;
 
