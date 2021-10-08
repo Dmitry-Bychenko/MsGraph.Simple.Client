@@ -1,9 +1,13 @@
 ﻿using Microsoft.Graph;
 
+using MsGraph.Simple.Client.Graph.Storage;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace MsGraph.Simple.Client.Graph {
 
@@ -74,8 +78,73 @@ namespace MsGraph.Simple.Client.Graph {
     }
 
     /// <summary>
+    /// Create Extension 
+    /// </summary>
+    public static async Task<bool> CreateExtension(this GraphUser user,
+                                                  string name,
+                                                  IDictionary<string, object> values) {
+      if (user is null)
+        return false;
+
+      if (values is null || values.Count <= 0)
+        return false;
+
+      if (string.IsNullOrEmpty(user.User.Id))
+        return false;
+
+      Dictionary<string, object> doc = values
+        .ToDictionary(pair => pair.Key, pair => pair.Value);
+
+      doc.TryAdd("@odata.type", "microsoft.graph.openTypeExtension");
+      doc.TryAdd("extensionName", name);
+
+      string query = JsonSerializer.Serialize(doc);
+      string address = $"users/{user.User.Id}/extensions";
+
+      var q = new MsGraphCommand(user.Enterprise.Connection);
+
+      var response = await q.PerformAsync(address, query, HttpMethod.Post);
+
+      return response.IsSuccessStatusCode;
+    }
+
+    /// <summary>
+    /// Create Extension 
+    /// </summary>
+    public static async Task<bool> CreateOrUpdateExtension(this GraphUser user,
+                                                                string name,
+                                                                IDictionary<string, object> values) {
+      if (user is null)
+        return false;
+
+      if (values is null || values.Count <= 0)
+        return false;
+
+      if (string.IsNullOrEmpty(user.User.Id))
+        return false;
+
+      Dictionary<string, object> doc = values
+        .ToDictionary(pair => pair.Key, pair => pair.Value);
+
+      doc.TryAdd("@odata.type", "microsoft.graph.openTypeExtension");
+      doc.TryAdd("extensionName", name);
+
+      string query = JsonSerializer.Serialize(doc);
+      string address = $"users/{user.User.Id}/extensions";
+
+      var q = new MsGraphCommand(user.Enterprise.Connection);
+
+      bool hasExt = user.User.ExtensionByName(name) is not null;
+
+      var response = await q.PerformAsync(address, query, hasExt ? HttpMethod.Patch : HttpMethod.Post);
+
+      return response.IsSuccessStatusCode;
+    }
+
+    /// <summary>
     /// Create Extension if it doesn't exist
     /// </summary>
+    /*
     public static bool CreateExtension(this GraphServiceClient client,
                                             string userId,
                                             string name,
@@ -102,6 +171,8 @@ namespace MsGraph.Simple.Client.Graph {
 
 
 
+      //MsGraphCommand q = client.Co 
+
       //JsonDocument doc = new JsonDocument();
 
       //JsonSerializer.Serialize()
@@ -110,6 +181,8 @@ namespace MsGraph.Simple.Client.Graph {
 
       return true;
     }
+
+    */
 
     #endregion Public
   }
