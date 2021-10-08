@@ -13,14 +13,31 @@ namespace TestForm {
   public partial class MainForm : Form {
     private async Task CorePerform() {
       string connectionString =
-        "Connection String Here";
-        ;
+        "connection string here";
 
       Enterprise users = await Enterprise.CreateAsync(connectionString);
 
+      // ee2219c3-5802-4957-9763-f7c499332638
+
+      GraphUser me = users.FindUser("ee2219c3-5802-4957-9763-f7c499332638");
+
+      Dictionary<string, object> data = new() {
+        { "IsBuddy", false },
+        { "BuddyId", null },
+        { "LevelUp", DateTime.Now },
+        { "WelcomeLetter", true },
+      };
+
+      var result = await me.CreateOrUpdateExtensionAsync("HR.Buddy.Demo", data);
+
+      rtbMain.Text = $"{(result ? "yes" : "no")}";
+
+      /*
+
       rtbMain.Text = string.Join(Environment.NewLine, users
         .Users
-        .Select(u => $"{u.User.DisplayName}"));
+        .Select(u => $"{u.User.DisplayName} : {u.User.Id}"));
+      */
 
       /*
       MsGraphConnection conn = new(connectionString);
