@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -88,16 +89,8 @@ namespace MsGraph.Simple.Client {
                                                               CancellationToken token) {
       if (address is null)
         throw new ArgumentNullException(nameof(address));
-
-      address = BuildAddress(address);
-
-      //header = header?.Trim() ?? "image/jpeg";
-
-      // image/jpeg
-      header = string.IsNullOrWhiteSpace(header) ? "application/octet-stream" : header.Trim();
-
       if (stream is null)
-        return await PerformAsync(address, null, method, header, token);
+        throw new ArgumentNullException(nameof(stream));
 
       string bearer = await Connection.AccessToken.ConfigureAwait(false);
 
@@ -106,11 +99,13 @@ namespace MsGraph.Simple.Client {
         RequestUri = new Uri(address),
         Headers = {
           { HttpRequestHeader.Authorization.ToString(), $"Bearer {bearer}" },
-          { HttpRequestHeader.ContentType.ToString(), "application/octet-stream"},
+          { HttpRequestHeader.ContentType.ToString(), "application/octet-stream" },
         },
 
         Content = new StreamContent(stream)
       };
+
+      req.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
       if (!string.IsNullOrWhiteSpace(header))
         req.Headers.Add(HttpRequestHeader.Accept.ToString(), header?.Trim());
