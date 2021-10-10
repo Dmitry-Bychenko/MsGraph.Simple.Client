@@ -7,6 +7,7 @@ using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
@@ -28,9 +29,26 @@ namespace MsGraph.Simple.Client {
 
     #endregion Constants
 
+    #region Private Data
+
+    private static Regex s_Version = new Regex(@"^/?[0-9]+(\.[0-9]+)+");
+
+    private string m_Version = "latest";
+
+    #endregion Private Data
+
     #region Algorithm
 
-    public static string BuildAddress(string address) {
+    private string ActualVersion() {
+      if ("latest".Equals(m_Version, StringComparison.OrdinalIgnoreCase))
+        return "v1.0";
+      else if ("beta".Equals(m_Version, StringComparison.OrdinalIgnoreCase))
+        return "beta";
+      else
+        return $"v{m_Version}";
+    }
+
+    private string BuildAddress(string address) {
       // https://graph.microsoft.com/v1.0/
 
       if (string.IsNullOrWhiteSpace(address))
@@ -39,11 +57,16 @@ namespace MsGraph.Simple.Client {
       if (address.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         return address;
 
+      if (s_Version.IsMatch(address)) 
+        return $"https://graph.microsoft.com/{address.TrimStart('/')}";
+      
+      /*
       if (address.StartsWith("v1.0/", StringComparison.OrdinalIgnoreCase))
         return $"https://graph.microsoft.com/{address}";
 
       if (address.StartsWith("/v1.0/", StringComparison.OrdinalIgnoreCase))
         return $"https://graph.microsoft.com{address}";
+      */
 
       if (address.StartsWith("beta/", StringComparison.OrdinalIgnoreCase))
         return $"https://graph.microsoft.com/{address}";
@@ -52,9 +75,9 @@ namespace MsGraph.Simple.Client {
         return $"https://graph.microsoft.com{address}";
 
       if (address.StartsWith('/'))
-        return $"https://graph.microsoft.com/v1.0{address}";
+        return $"https://graph.microsoft.com/{ActualVersion()}{address}";
 
-      return $"https://graph.microsoft.com/v1.0/{address}";
+      return $"https://graph.microsoft.com/{ActualVersion()}/{address}";
     }
 
     #endregion Algorithm
@@ -69,6 +92,15 @@ namespace MsGraph.Simple.Client {
       Connection = connection ?? throw new ArgumentNullException(nameof(connection));
     }
 
+    /// <summary>
+    /// Standard Constructor
+    /// </summary>
+    /// <param name="connection">Connection To use</param>
+    public MsGraphCommand(MsGraphConnection connection, string version) 
+      : this(connection) {
+        Version = version;
+    }
+
     #endregion Create
 
     #region Public
@@ -79,9 +111,25 @@ namespace MsGraph.Simple.Client {
     public MsGraphConnection Connection { get; }
 
     /// <summary>
+    /// Version
+    /// </summary>
+    public string Version {
+      get => m_Version;
+      set {
+        if (string.IsNullOrWhiteSpace(value))
+          value = "latest";
+
+        m_Version = "beta".Equals(value, StringComparison.OrdinalIgnoreCase) ||
+                    "latest".Equals(value, StringComparison.OrdinalIgnoreCase) ||
+                     Regex.IsMatch(value, @"[0-9]+(?:\.[0-9]+)+")
+          ? value
+          : throw new ArgumentException($"Version ({value}) is not supported", nameof(value));
+      }
+    }
+
+    /// <summary>
     /// Perform 
     /// </summary>
-    // https://stackoverflow.com/questions/36503036/microsoft-graph-api-update-another-users-photo
     public async Task<HttpResponseMessage> PerformStreamAsync(string address,
                                                               Stream stream,
                                                               HttpMethod method,

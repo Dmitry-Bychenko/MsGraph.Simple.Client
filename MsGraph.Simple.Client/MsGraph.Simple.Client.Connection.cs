@@ -382,6 +382,11 @@ namespace MsGraph.Simple.Client {
     public MsGraphCommand CreateCommand() => new(this);
 
     /// <summary>
+    /// Create Command
+    /// </summary>
+    public MsGraphCommand CreateCommand(string version) => new(this, version);
+
+    /// <summary>
     /// Connecting Event
     /// </summary>
     public event EventHandler<ConnectingEventArgs> Connecting;
