@@ -29,7 +29,7 @@ namespace MsGraph.Simple.Client {
 
     #region Algorithm
 
-    private static string BuildAddress(string address) {
+    public static string BuildAddress(string address) {
       // https://graph.microsoft.com/v1.0/
 
       if (string.IsNullOrWhiteSpace(address))
@@ -76,6 +76,73 @@ namespace MsGraph.Simple.Client {
     /// Connection to use
     /// </summary>
     public MsGraphConnection Connection { get; }
+
+    /// <summary>
+    /// Perform 
+    /// </summary>
+    // https://stackoverflow.com/questions/36503036/microsoft-graph-api-update-another-users-photo
+    public async Task<HttpResponseMessage> PerformStreamAsync(string address,
+                                                              Stream stream,
+                                                              HttpMethod method,
+                                                              string header,
+                                                              CancellationToken token) {
+      if (address is null)
+        throw new ArgumentNullException(nameof(address));
+
+      address = BuildAddress(address);
+
+      //header = header?.Trim() ?? "image/jpeg";
+
+      // image/jpeg
+      header = string.IsNullOrWhiteSpace(header) ? "application/octet-stream" : header.Trim();
+
+      if (stream is null)
+        return await PerformAsync(address, null, method, header, token);
+
+      string bearer = await Connection.AccessToken.ConfigureAwait(false);
+
+      using var req = new HttpRequestMessage {
+        Method = method,
+        RequestUri = new Uri(address),
+        Headers = {
+          { HttpRequestHeader.Authorization.ToString(), $"Bearer {bearer}" },
+          { HttpRequestHeader.ContentType.ToString(), "application/octet-stream"},
+        },
+
+        Content = new StreamContent(stream)
+      };
+
+      if (!string.IsNullOrWhiteSpace(header))
+        req.Headers.Add(HttpRequestHeader.Accept.ToString(), header?.Trim());
+
+      return await MsGraphConnection.Client.SendAsync(req, token).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Perform 
+    /// </summary>
+    public async Task<HttpResponseMessage> PerformStreamAsync(string address,
+                                                              Stream stream,
+                                                              HttpMethod method,
+                                                              string header) =>
+      await PerformStreamAsync(address, stream, method, header, default);
+
+    /// <summary>
+    /// Perform 
+    /// </summary>
+    public async Task<HttpResponseMessage> PerformStreamAsync(string address,
+                                                              Stream stream,
+                                                              HttpMethod method,
+                                                              CancellationToken token) =>
+      await PerformStreamAsync(address, stream, method, default, token);
+
+    /// <summary>
+    /// Perform 
+    /// </summary>
+    public async Task<HttpResponseMessage> PerformStreamAsync(string address,
+                                                              Stream stream,
+                                                              HttpMethod method) =>
+      await PerformStreamAsync(address, stream, method, default, default);
 
     /// <summary>
     /// Perform 

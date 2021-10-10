@@ -180,7 +180,7 @@ namespace MsGraph.Simple.Client.Json {
     public static async Task WriteImageAsync(this GraphServiceClient client,
                                                   Stream source,
                                                   CancellationToken token = default) =>
-      await WriteImageAsync(client, null, token).ConfigureAwait(false);
+      await WriteImageAsync(client, null, source, token).ConfigureAwait(false);
 
     #endregion Public
   }

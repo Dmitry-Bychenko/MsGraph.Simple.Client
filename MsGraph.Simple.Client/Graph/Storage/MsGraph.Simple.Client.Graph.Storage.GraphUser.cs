@@ -2,7 +2,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MsGraph.Simple.Client.Graph.Storage {
@@ -127,6 +130,22 @@ namespace MsGraph.Simple.Client.Graph.Storage {
       Enterprise = null;
 
       return true;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public async Task WriteStreamAsync(string address, 
+                                       Stream stream, 
+                                       HttpMethod method, 
+                                       string header = default,
+                                       CancellationToken token = default) {
+      var q = Enterprise.Connection.CreateCommand();
+
+      using var response = await q.PerformStreamAsync(address, stream, method, header, token);
+
+      if (!response.IsSuccessStatusCode)
+        throw new InvalidOperationException($"Code: {response.StatusCode} ({(int)(response.StatusCode)}); reason: {response.ReasonPhrase}");
     }
 
     /// <summary>
