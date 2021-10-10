@@ -13,12 +13,20 @@ namespace TestForm {
   public partial class MainForm : Form {
     private async Task CorePerform() {
       string connectionString =
-        "connection string here";
+          "connection string here";
 
       Enterprise users = await Enterprise.CreateAsync(connectionString);
 
       // ee2219c3-5802-4957-9763-f7c499332638
+      // 819d5eba-d31c-417d-a7c7-1e9bef72eb39
 
+      var q = users.Connection.CreateCommand();
+
+      using var result = await q.ReadJsonAsync("v1.0/users/819d5eba-d31c-417d-a7c7-1e9bef72eb39");
+
+      rtbMain.Text = result.RootElement.ToString();
+
+      /*
       GraphUser me = users.FindUser("ee2219c3-5802-4957-9763-f7c499332638");
 
       Dictionary<string, object> data = new() {
@@ -31,6 +39,7 @@ namespace TestForm {
       var result = await me.CreateOrUpdateExtensionAsync("HR.Buddy.Demo", data);
 
       rtbMain.Text = $"{(result ? "yes" : "no")}";
+      */
 
       /*
 

@@ -31,7 +31,7 @@ namespace MsGraph.Simple.Client {
 
     #region Private Data
 
-    private static Regex s_Version = new Regex(@"^/?[0-9]+(\.[0-9]+)+");
+    private static Regex s_Version = new Regex(@"^\/?v[0-9]+(?:\.[0-9]+)+");
 
     private string m_Version = "latest";
 
@@ -60,19 +60,16 @@ namespace MsGraph.Simple.Client {
       if (s_Version.IsMatch(address)) 
         return $"https://graph.microsoft.com/{address.TrimStart('/')}";
       
-      /*
-      if (address.StartsWith("v1.0/", StringComparison.OrdinalIgnoreCase))
-        return $"https://graph.microsoft.com/{address}";
-
-      if (address.StartsWith("/v1.0/", StringComparison.OrdinalIgnoreCase))
-        return $"https://graph.microsoft.com{address}";
-      */
-
       if (address.StartsWith("beta/", StringComparison.OrdinalIgnoreCase))
         return $"https://graph.microsoft.com/{address}";
 
       if (address.StartsWith("/beta/", StringComparison.OrdinalIgnoreCase))
         return $"https://graph.microsoft.com{address}";
+
+      if (address.StartsWith("/latest/", StringComparison.OrdinalIgnoreCase))
+        address = address.Substring("/latest/".Length);
+      else if (address.StartsWith("latest/", StringComparison.OrdinalIgnoreCase))
+        address = address.Substring("latest/".Length);
 
       if (address.StartsWith('/'))
         return $"https://graph.microsoft.com/{ActualVersion()}{address}";
