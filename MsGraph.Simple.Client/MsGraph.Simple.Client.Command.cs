@@ -92,6 +92,8 @@ namespace MsGraph.Simple.Client {
       if (stream is null)
         throw new ArgumentNullException(nameof(stream));
 
+      address = BuildAddress(address);
+
       string bearer = await Connection.AccessToken.ConfigureAwait(false);
 
       using var req = new HttpRequestMessage {
