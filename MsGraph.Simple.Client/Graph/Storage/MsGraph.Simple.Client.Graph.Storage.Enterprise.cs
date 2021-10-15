@@ -128,14 +128,18 @@ namespace MsGraph.Simple.Client.Graph.Storage {
           .ConfigureAwait(false);
       }
 
-      var me = await Client
-        .Me
-        .Request()
-        .GetAsync()
-        .ConfigureAwait(false);
+      if (Connection.IsDelegated) {
+        var me = await Client
+          .Me
+          .Request()
+          .GetAsync()
+          .ConfigureAwait(false);
 
-      Me = m_UserDict[me.Id];
-
+        Me = m_UserDict[me.Id];
+      }
+      else if (m_UserDict.TryGetValue(Connection.Login, out var me))
+        Me = me;
+      
       m_Users.Sort((left, right) => string.Compare(left.User.DisplayName, right.User.DisplayName, StringComparison.OrdinalIgnoreCase));
 
       // Master Domain Computation
@@ -210,9 +214,9 @@ namespace MsGraph.Simple.Client.Graph.Storage {
     public string MasterDomain { get; private set; } = "";
 
     /// <summary>
-    /// Me
+    /// Me (can be null if not Delegated connection)
     /// </summary>
-    public GraphUser Me { get; private set; }
+    public GraphUser Me { get; set; }
 
     /// <summary>
     /// Users

@@ -1,133 +1,101 @@
 ﻿using MsGraph.Simple.Client;
 using MsGraph.Simple.Client.Graph;
 using MsGraph.Simple.Client.Graph.Storage;
+using MsGraph.Simple.Client.Json;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace TestForm {
 
+  // Correct:
+  //   "Tenant=1da41803-dfa6-4727-8d04-dba93b9ea42d;Application=b502c859-aa0b-4895-890f-0d357491e96d;ClientSecret=Y5E7Q~tFzXSm2hnGKJr5tZfrPv5yeesfXNfk9;login=dmitry.bytchenko@7801676234.onmicrosoft.com;password=797Gnome797@;permissions=User.ReadBasic.All,User.Read,User.Read.All,User.ReadWrite.All,Files.Read,Files.ReadWrite,Files.ReadWrite.AppFolder";
+  // Target:
+  //   "Tenant=1b4a1891-24bd-451e-8548-48986af6f553;Application=a4f2dc33-a706-49fd-b56e-3018ca81f49d;ClientSecret=inQ7Q~lvvQU5Sddlfwqrwk38xMoNEzG716Xyy;login=sync_aad_1c@nedra.digital;password=Har15204;permissions=User.ReadBasic.All,User.Read,User.Read.All,User.ReadWrite.All,Files.Read,Files.ReadWrite,Files.ReadWrite.AppFolder";
+  // Test:
+  //   "Tenant=1b4a1891-24bd-451e-8548-48986af6f553;Application=a8b596a4-3183-4ba2-850e-f0f8f1b683ba;ClientSecret=yog7Q~jR1mhfRBvgvwLNlgJ2IZ-Gdoii3bA.p;login=sync_aad_1c@nedra.digital;password=Har15204;permissions=User.ReadBasic.All,User.Read,User.Read.All,User.ReadWrite.All,Files.Read,Files.ReadWrite,Files.ReadWrite.AppFolder";
+
+
   public partial class MainForm : Form {
+
+    private static long Demo(long a, int n) {
+      for (int i = 0; i < n; ++i)
+        for (int j = 0; j < i; ++j)
+          a = a * (i + j);
+
+      return a;
+    }
+
+    public interface IBoolS {
+      IEnumerable<bool> GetBools(int N);
+    }
+
+    public class Generator : IBoolS {
+      public bool ValueToGenerate { get; init; }
+
+      public IEnumerable<bool> GetBools(int N) => Enumerable.Repeat(ValueToGenerate, N);
+    }
+
+    class CustomType {
+      public int X;
+      public int Y;
+
+      public override string ToString() => $"{X,2} : {Y,3}";
+    }
+
+    private static IEnumerable<CustomType> Fill(IEnumerable<CustomType> source) {
+      int expected = 0; // let compiler be happy, we'll rewrite this value
+      bool first = true;
+
+      foreach (var item in source.OrderBy(x => x.X)) {
+        if (!first && item.X > expected)
+          while (item.X > expected)
+            yield return new CustomType() { X = expected++, Y = 0 };
+
+        first = false;
+        expected = item.X + 1;
+
+        yield return item;
+      }
+    }
+
     private async Task CorePerform() {
-      string connectionString =
-          "connection string here";
+      // 2HZ7Q~X_R6-HGmHjA3zHLSE5TZIOj1qR7OAC1
 
-      Enterprise users = await Enterprise.CreateAsync(connectionString);
-
-      // ee2219c3-5802-4957-9763-f7c499332638
-      // 819d5eba-d31c-417d-a7c7-1e9bef72eb39
-
-      var q = users.Connection.CreateCommand();
-
-      using var result = await q.ReadJsonAsync("v1.0/users/819d5eba-d31c-417d-a7c7-1e9bef72eb39");
-
-      rtbMain.Text = result.RootElement.ToString();
-
-      /*
-      GraphUser me = users.FindUser("ee2219c3-5802-4957-9763-f7c499332638");
-
-      Dictionary<string, object> data = new() {
-        { "IsBuddy", false },
-        { "BuddyId", null },
-        { "LevelUp", DateTime.Now },
-        { "WelcomeLetter", true },
+      List<CustomType> demo = new List<CustomType>() {
+        new CustomType() { X = 0, Y = 0 },
+        new CustomType() { X = 1, Y = 10 },
+        new CustomType() { X = 4, Y = 40 },
+        new CustomType() { X = 5, Y = 50 },
+        new CustomType() { X = 8, Y = 80},
+        new CustomType() { X = 10, Y = 100 },
+        new CustomType() { X = 10, Y = 101 },
+        new CustomType() { X = 12, Y = 120 },
       };
 
-      var result = await me.CreateOrUpdateExtensionAsync("HR.Buddy.Demo", data);
+      string report = string.Join(Environment.NewLine, Fill(demo));
 
-      rtbMain.Text = $"{(result ? "yes" : "no")}";
-      */
+      rtbMain.Text = report;
 
-      /*
+
+      return;
+
+      string connectionString = "Pu it here";
+      Enterprise users = await Enterprise.CreateAsync(connectionString);
+
+      foreach (var user in users) {
+        Stream stream = await user.Client.ReadImageAsync(user.User.Id);
+      }
 
       rtbMain.Text = string.Join(Environment.NewLine, users
-        .Users
-        .Select(u => $"{u.User.DisplayName} : {u.User.Id}"));
-      */
-
-      /*
-      MsGraphConnection conn = new(connectionString);
-
-      var client = await conn.CreateGraphClientAsync();
-
-      List<string> list = new();
-
-      //var result = await OneNoteFile.DeleteFileAsync(client, @"abc\def\pqr.txt");
-
-      //string text = await OneNoteFile.ReadAllText(client, @"abc/def/pqr.txt");
-
-      var me = await client
-        .Me
-        .Request()
-        .GetAsync();
-
-      bool result = await UserSchema.DropExtensionAsync(
-        client,
-        me.Id,
-        "HR.Russian.Names"
-        );
-      */
-
-      /*
-      var data = OneNoteDirectory.EnumerateFilesAsync(client, "", x => true, SearchOption.AllDirectories);
-
-      await foreach (var item in data) {
-        list.Add(item);
-      }
-      */
-
-      //rtbMain.Text = result ? "OK" : "Failed";
-
-      /*
-      
-
-      List<string> list = new List<string>();
-
-      var data = client
-        .Users
-        .Request()
-        .Expand("Manager,Extensions")
-        .EnumerateAsync<User>();
-
-      await foreach(var item in data) {
-        list.Add(item.DisplayName);
-      }
-      */
-
-      /*
-      var data = await client
-          .Users
-          .Request()
-          .Expand("Manager,Extensions")
-          
-          
-          //.Select(select)
-          .GetAsync()
-          .ConfigureAwait(false);
-
-      //IGraphServiceAgreementsCollectionRequest 
-
-     
-
-      await foreach(var item in data.EnumerateAsync<User>().ConfigureAwait(false)) {
-        list.Add(item.DisplayName);
-      }
-      */
-
-      //rtbMain.Text = string.Join(Environment.NewLine, list);
-
-      /*
-      var user = await client
-        .Me
-        .Request()
-        .GetAsync();
-        
-
-      rtbMain.Text = $"{user.DisplayName}";
-      */
+        .Users.Select(user => $"{user.User.Id} : {user.User.DisplayName} : {user.User.UserPrincipalName}")); 
     }
 
     public MainForm() {

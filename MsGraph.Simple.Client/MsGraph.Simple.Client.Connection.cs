@@ -83,6 +83,8 @@ namespace MsGraph.Simple.Client {
   public sealed class MsGraphConnection : IAuthenticationProvider, IEquatable<MsGraphConnection> {
     #region Private Data
 
+    private object m_Sync = new object();
+
     private static readonly CookieContainer s_CookieContainer;
 
     private static readonly HttpClient s_HttpClient;
@@ -90,6 +92,8 @@ namespace MsGraph.Simple.Client {
     private string m_ConnectionString = "";
 
     private List<string> m_Permissions = new();
+
+    private AuthenticationResult m_AuthenticationResult;
 
     #endregion Private Data
 
@@ -102,11 +106,34 @@ namespace MsGraph.Simple.Client {
       );
     }
 
-    // Access Token
-    private async Task<string> GetAccessToken(CancellationToken token = default) {
+    private async Task<AuthenticationResult> GetAuthenticiationAsync(CancellationToken token = default) {
       token.ThrowIfCancellationRequested();
 
       AuthenticationResult result = null;
+
+      if (ConfidentialApplication is not null && !Delegated) {
+        try {
+          result = await ConfidentialApplication
+            .AcquireTokenForClient(Scope)
+            .ExecuteAsync()
+            .ConfigureAwait(false);
+
+          UserAccount = result.Account;
+
+          IsDelegated = false;
+
+          return result;
+        }
+        catch (MsalUiRequiredException) {
+          ;
+        }
+        catch (MsalServiceException) {
+          ;
+        }
+        catch (Exception) {
+          ;
+        }
+      }
 
       if (UserAccount is not null) {
         result = await Application
@@ -114,8 +141,11 @@ namespace MsGraph.Simple.Client {
           .ExecuteAsync(token)
           .ConfigureAwait(false);
 
-        return result.AccessToken;
+        IsDelegated = true;
+
+        return result;
       }
+
       if (!string.IsNullOrWhiteSpace(Login) &&
           !string.IsNullOrWhiteSpace(Password) &&
            Guid.TryParse(TenantId, out var _guid)) {
@@ -132,7 +162,9 @@ namespace MsGraph.Simple.Client {
 
           UserAccount = result.Account;
 
-          return result.AccessToken;
+          IsDelegated = true;
+
+          return result;
         }
         catch (TaskCanceledException) {; }
         catch (TimeoutException) {; }
@@ -160,8 +192,9 @@ namespace MsGraph.Simple.Client {
             .ConfigureAwait(false);
 
           UserAccount = result.Account;
+          IsDelegated = true;
 
-          return result.AccessToken;
+          return result;
         }
         catch (TaskCanceledException) {; }
         catch (TimeoutException) {; }
@@ -182,15 +215,41 @@ namespace MsGraph.Simple.Client {
           .ConfigureAwait(false);
 
         UserAccount = result.Account;
+        IsDelegated = true;
 
-        return result.AccessToken;
+        return result;
       }
       catch (TaskCanceledException) {; }
       catch (TimeoutException) {; }
       catch (MsalClientException) {; }
       catch (MsalUiRequiredException) {; }
 
+      IsDelegated = false;
+
       return null;
+    }
+
+    // Access Token
+    private async Task<string> GetAccessToken(CancellationToken token = default) {
+      token.ThrowIfCancellationRequested();
+
+      AuthenticationResult auth = null;
+
+      Interlocked.Exchange(ref auth, m_AuthenticationResult);
+
+      if (auth is not null) {
+        if ((auth.ExpiresOn - DateTimeOffset.Now).TotalSeconds > Expired)
+          return auth.AccessToken;
+
+        Interlocked.Exchange(ref m_AuthenticationResult, null);
+      }
+
+      auth = await GetAuthenticiationAsync(token);
+
+      if (auth is not null)
+        Interlocked.Exchange(ref m_AuthenticationResult, auth);
+     
+      return auth?.AccessToken;
     }
 
     #endregion Algorithm
@@ -284,6 +343,11 @@ namespace MsGraph.Simple.Client {
         RedirectionAddress = builder.TryGetValue("Redirect", out v) ? v.ToString().Trim() : "http://localhost";
         Login = builder.TryGetValue("Login", out v) ? v.ToString().Trim() : "";
         Password = builder.TryGetValue("Password", out v) ? v.ToString().Trim() : "";
+        ClientSecret = builder.TryGetValue("ClientSecret", out v) ? v.ToString().Trim() : "";
+
+        Delegated = builder.TryGetValue("Delegated", out v) && v is bool b ? b : false;
+
+        Expired = builder.TryGetValue("Expired", out v) && v is int iv && iv > 0 ? iv : 30;
 
         string permissions = builder.TryGetValue("Permissions", out v) ? v.ToString() : "";
 
@@ -300,6 +364,17 @@ namespace MsGraph.Simple.Client {
           .WithAuthority(AzureCloudInstance.AzurePublic, TenantId)
           .WithRedirectUri(RedirectionAddress)
           .Build();
+
+        // https://login.microsoftonline.com/eb1ed152-0000-0000-0000-32401f3f9abd
+
+        if (!string.IsNullOrWhiteSpace(ClientSecret)) {
+          ConfidentialApplication = ConfidentialClientApplicationBuilder
+            .Create(ApplicationId)
+            .WithClientSecret(ClientSecret)
+            .WithAuthority(new Uri($"https://login.microsoftonline.com/{TenantId}"))
+            .WithRedirectUri(RedirectionAddress)
+            .Build();
+        }
 
         UserAccount = null;
       }
@@ -331,6 +406,27 @@ namespace MsGraph.Simple.Client {
     public string Password { get; private set; } = "";
 
     /// <summary>
+    /// Client Secret
+    /// </summary>
+    public string ClientSecret { get; private set; } = "";
+
+    /// <summary>
+    /// Scope
+    /// </summary>
+    public static readonly IReadOnlyList<string> Scope = new List<string>() {
+      "https://graph.microsoft.com/.default" };
+
+    /// <summary>
+    /// Grant Type
+    /// </summary>
+    public const string GrantType = "client_credentials";
+
+    /// <summary>
+    /// Is Delegated
+    /// </summary>
+    public bool IsDelegated { get; private set; }
+
+    /// <summary>
     /// Permissions
     /// </summary>
     public IReadOnlyList<string> Permissions => m_Permissions;
@@ -341,15 +437,28 @@ namespace MsGraph.Simple.Client {
     public bool Connected => UserAccount is not null;
 
     /// <summary>
+    /// Is Delegated
+    /// </summary>
+    public bool Delegated { get; private set; }
+
+    /// <summary>
+    /// Time to expire
+    /// </summary>
+    public int Expired { get; private set; } = 30;
+
+    /// <summary>
     /// Connect Async
     /// 
     /// Connection String, parts:
     /// 
-    /// Tenant      - optional
+    /// Tenant       - optional
+    /// ClientSecret - optional
     /// Application
-    /// Redirect    - optional
-    /// Login       - optional
-    /// Password
+    /// Redirect     - optional
+    /// Login        - optional
+    /// Password     - optional
+    /// Delegated    - optional
+    /// Expired      - optional
     /// </summary>
     public async Task<bool> ConnectAsync(CancellationToken token = default) {
       string bearer = await GetAccessToken(token).ConfigureAwait(false);
@@ -404,6 +513,11 @@ namespace MsGraph.Simple.Client {
     /// Application (MSA Client)
     /// </summary>
     public IPublicClientApplication Application { get; private set; }
+
+    /// <summary>
+    /// Confidential Application (MSA Client)
+    /// </summary>
+    public IConfidentialClientApplication ConfidentialApplication { get; private set; }
 
     /// <summary>
     /// User Account
