@@ -18,8 +18,8 @@ namespace MsGraph.Simple.Client.Graph.Storage {
   //
   //-------------------------------------------------------------------------------------------------------------------
 
-  public sealed class Enterprise 
-    : IReadOnlyList<GraphUser>, 
+  public sealed class Enterprise
+    : IReadOnlyList<GraphUser>,
       IReadOnlyDictionary<string, GraphUser> {
 
     #region Private Data
@@ -44,7 +44,7 @@ namespace MsGraph.Simple.Client.Graph.Storage {
 
     private readonly Dictionary<string, GraphUser> m_UserDict = new(StringComparer.OrdinalIgnoreCase);
 
-    private readonly ConcurrentDictionary<string, GraphUser> m_BookMarks = new (StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, GraphUser> m_BookMarks = new(StringComparer.OrdinalIgnoreCase);
 
     #endregion Private Data
 
@@ -139,7 +139,7 @@ namespace MsGraph.Simple.Client.Graph.Storage {
       }
       else if (m_UserDict.TryGetValue(Connection.Login, out var me))
         Me = me;
-      
+
       m_Users.Sort((left, right) => string.Compare(left.User.DisplayName, right.User.DisplayName, StringComparison.OrdinalIgnoreCase));
 
       // Master Domain Computation
@@ -298,7 +298,7 @@ namespace MsGraph.Simple.Client.Graph.Storage {
     /// <summary>
     /// Load 
     /// </summary>
-    public async Task LoadAsync() => await CoreLoadAll().ConfigureAwait(false); 
+    public async Task LoadAsync() => await CoreLoadAll().ConfigureAwait(false);
 
     /// <summary>
     /// Add Bookmark

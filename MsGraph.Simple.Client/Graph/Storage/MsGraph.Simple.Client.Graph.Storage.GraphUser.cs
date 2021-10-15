@@ -135,9 +135,9 @@ namespace MsGraph.Simple.Client.Graph.Storage {
     /// <summary>
     /// 
     /// </summary>
-    public async Task WriteStreamAsync(string address, 
-                                       Stream stream, 
-                                       HttpMethod method, 
+    public async Task WriteStreamAsync(string address,
+                                       Stream stream,
+                                       HttpMethod method,
                                        string header = default,
                                        CancellationToken token = default) {
       var q = Enterprise.Connection.CreateCommand();

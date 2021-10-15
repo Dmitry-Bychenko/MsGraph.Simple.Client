@@ -1,15 +1,10 @@
-﻿using MsGraph.Simple.Client;
-using MsGraph.Simple.Client.Graph;
-using MsGraph.Simple.Client.Graph.Storage;
+﻿using MsGraph.Simple.Client.Graph.Storage;
 using MsGraph.Simple.Client.Json;
 
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -87,7 +82,8 @@ namespace TestForm {
 
       return;
 
-      string connectionString = "Pu it here";
+      string connectionString = "put it here";
+
       Enterprise users = await Enterprise.CreateAsync(connectionString);
 
       foreach (var user in users) {
@@ -95,7 +91,7 @@ namespace TestForm {
       }
 
       rtbMain.Text = string.Join(Environment.NewLine, users
-        .Users.Select(user => $"{user.User.Id} : {user.User.DisplayName} : {user.User.UserPrincipalName}")); 
+        .Users.Select(user => $"{user.User.Id} : {user.User.DisplayName} : {user.User.UserPrincipalName}"));
     }
 
     public MainForm() {

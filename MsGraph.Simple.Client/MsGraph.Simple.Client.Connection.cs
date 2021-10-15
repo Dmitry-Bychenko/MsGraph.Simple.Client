@@ -83,8 +83,6 @@ namespace MsGraph.Simple.Client {
   public sealed class MsGraphConnection : IAuthenticationProvider, IEquatable<MsGraphConnection> {
     #region Private Data
 
-    private object m_Sync = new object();
-
     private static readonly CookieContainer s_CookieContainer;
 
     private static readonly HttpClient s_HttpClient;
@@ -115,7 +113,7 @@ namespace MsGraph.Simple.Client {
         try {
           result = await ConfidentialApplication
             .AcquireTokenForClient(Scope)
-            .ExecuteAsync()
+            .ExecuteAsync(token)
             .ConfigureAwait(false);
 
           UserAccount = result.Account;
@@ -248,7 +246,7 @@ namespace MsGraph.Simple.Client {
 
       if (auth is not null)
         Interlocked.Exchange(ref m_AuthenticationResult, auth);
-     
+
       return auth?.AccessToken;
     }
 
@@ -345,7 +343,7 @@ namespace MsGraph.Simple.Client {
         Password = builder.TryGetValue("Password", out v) ? v.ToString().Trim() : "";
         ClientSecret = builder.TryGetValue("ClientSecret", out v) ? v.ToString().Trim() : "";
 
-        Delegated = builder.TryGetValue("Delegated", out v) && v is bool b ? b : false;
+        Delegated = builder.TryGetValue("Delegated", out v) && v is bool b && b;
 
         Expired = builder.TryGetValue("Expired", out v) && v is int iv && iv > 0 ? iv : 30;
 
