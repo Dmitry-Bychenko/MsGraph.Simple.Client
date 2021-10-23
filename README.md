@@ -1,5 +1,7 @@
 # MsGraph.Simple.Client
 
+[![NuGet version (MsGraph.Simple.Client)](https://img.shields.io/nuget/v/MsGraph.Simple.Client.svg?style=flat-square)](https://www.nuget.org/packages/MsGraph.Simple.Client/)
+
 Simple MS Graph Client
 
 ```c#
