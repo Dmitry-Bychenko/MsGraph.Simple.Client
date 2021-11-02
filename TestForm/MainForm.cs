@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -61,28 +63,90 @@ namespace TestForm {
       }
     }
 
+
+    public static T[] Shift<T>(T[] source, int shift) {
+      if (null == source)
+        throw new ArgumentNullException(nameof(source));
+      if (source.Length == 0)
+        return Array.Empty<T>();
+
+      shift = (shift % source.Length + source.Length) % source.Length;
+
+      T[] result = new T[source.Length];
+
+      Array.Copy(source, shift, result, 0, source.Length - shift);
+      Array.Copy(source, 0, result, source.Length - shift, shift);
+
+      return result;
+    }
+
+    public static int[] Shuffle(int[] nums) {
+      if (null == nums)
+        throw new ArgumentNullException(nameof(nums));
+
+      if (nums.Length % 2 != 0)
+        throw new ArgumentOutOfRangeException(nameof(nums));
+
+      return Enumerable
+        .Range(0, nums.Length)
+        .Select(i => nums[i / 2 + (i % 2) * (nums.Length / 2)])
+        .ToArray();
+    }
+
+    //-------------------
+
+  public class Vat {
+      // decimal is a better choice for finance
+      private decimal m_IncludeVat;
+
+      // To compute VAT we should know the percent; 
+      // please don't hardcode it but keep as known constant / property
+      public const decimal Percent = 18.0m;
+
+      public decimal IncludeVat {
+        get => m_IncludeVat;
+        set {
+          // negative cash are usually invalid; if it's not the case, drop this check
+          if (value < 0)
+            throw new ArgumentOutOfRangeException(nameof(value));
+
+          m_IncludeVat = value;
+          Tax = Math.Round(m_IncludeVat / 100 * Percent, 2);
+        }
+      }
+
+      public decimal ExcludeVat {
+        get => m_IncludeVat - Tax;
+        set {
+          if (value < 0)
+            throw new ArgumentOutOfRangeException(nameof(value));
+
+          m_IncludeVat = Math.Round(value / (100 - Percent) * 100, 2);
+          Tax = m_IncludeVat - value;
+        }
+      }
+
+      // Let's be nice and provide Tax value as well as IncludeVat, ExcludeVat 
+      public decimal Tax { get; private set; }
+
+      public override string ToString() =>
+        $"Include: {IncludeVat:f2}; exclude: {ExcludeVat:f2} (tax: {Tax:f2})";
+    }
+
+
+    //-------------------
+
     private async Task CorePerform() {
       // 2HZ7Q~X_R6-HGmHjA3zHLSE5TZIOj1qR7OAC1
 
-      List<CustomType> demo = new List<CustomType>() {
-        new CustomType() { X = 0, Y = 0 },
-        new CustomType() { X = 1, Y = 10 },
-        new CustomType() { X = 4, Y = 40 },
-        new CustomType() { X = 5, Y = 50 },
-        new CustomType() { X = 8, Y = 80},
-        new CustomType() { X = 10, Y = 100 },
-        new CustomType() { X = 10, Y = 101 },
-        new CustomType() { X = 12, Y = 120 },
-      };
+      HttpClient clnt = new HttpClient();
 
-      string report = string.Join(Environment.NewLine, Fill(demo));
-
-      rtbMain.Text = report;
-
+      
 
       return;
 
-      string connectionString = "put it here";
+      string connectionString =
+        "put it here";
 
       Enterprise users = await Enterprise.CreateAsync(connectionString);
 

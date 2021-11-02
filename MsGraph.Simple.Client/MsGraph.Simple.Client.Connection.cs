@@ -343,7 +343,18 @@ namespace MsGraph.Simple.Client {
         Password = builder.TryGetValue("Password", out v) ? v.ToString().Trim() : "";
         ClientSecret = builder.TryGetValue("ClientSecret", out v) ? v.ToString().Trim() : "";
 
-        Delegated = builder.TryGetValue("Delegated", out v) && v is bool b && b;
+        if (builder.TryGetValue("Delegated", out v)) {
+          if (v is bool b)
+            Delegated = b;
+          else {
+            if (v is null)
+              Delegated = false;
+            else
+              Delegated = bool.TryParse(v.ToString(), out b) && b;
+          } 
+        }
+
+        //Delegated = builder.TryGetValue("Delegated", out v) && v is bool b && b;
 
         Expired = builder.TryGetValue("Expired", out v) && v is int iv && iv > 0 ? iv : 30;
 
