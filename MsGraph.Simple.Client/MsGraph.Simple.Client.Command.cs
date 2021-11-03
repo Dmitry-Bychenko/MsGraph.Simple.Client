@@ -125,6 +125,36 @@ namespace MsGraph.Simple.Client {
     }
 
     /// <summary>
+    /// Perform Request
+    /// </summary>
+    public async Task<HttpResponseMessage> PerformRequestAsync(string address,
+                                                               HttpRequestMessage request,
+                                                               CancellationToken token) {
+      if (request is null)
+        throw new ArgumentNullException(nameof(request));
+
+      string bearer = await Connection.AccessToken.ConfigureAwait(false);
+
+      request.Headers.Add(HttpRequestHeader.Authorization.ToString(), $"Bearer {bearer}");
+
+      if (request.RequestUri is null) {
+        if (address is null)
+          throw new ArgumentNullException(nameof(address));
+
+        request.RequestUri = new Uri(BuildAddress(address));
+      }
+
+      return await MsGraphConnection.Client.SendAsync(request, token).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Perform Request
+    /// </summary>
+    public async Task<HttpResponseMessage> PerformRequestAsync(string address,
+                                                               HttpRequestMessage request) =>
+      await PerformRequestAsync(address, request, CancellationToken.None).ConfigureAwait(false);
+
+    /// <summary>
     /// Perform 
     /// </summary>
     public async Task<HttpResponseMessage> PerformStreamAsync(string address,
